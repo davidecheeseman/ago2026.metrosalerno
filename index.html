@@ -17,11 +17,12 @@
 <!-- Header -->
 <div id="header">
   <div class="logo">M</div>
-  <div><div class="htitle">Metro Salerno</div><div class="hsub">Linea metropolitana leggera</div></div>
+  <div><div class="htitle">Metro Salerno</div><div class="hsub">Metro + Bus</div></div>
   <div class="hright">
     <div class="toggle-wrap">
-      <button class="toggle-btn active" id="tLine" onclick="setView('line')">Linea</button>
+      <button class="toggle-btn active" id="tLine" onclick="setView('line')">Metro</button>
       <button class="toggle-btn" id="tMap" onclick="setView('map')">Mappa</button>
+      <button class="toggle-btn" id="tBus" onclick="setView('bus')">Bus</button>
       <button class="toggle-btn" id="tPlan" onclick="setView('plan')">Pianifica</button>
     </div>
     <div class="hclock" id="clock"></div>
@@ -38,6 +39,31 @@
 
 <!-- Map view -->
 <div id="mapWrap"><div id="map"></div></div>
+
+<!-- Bus view -->
+<div id="busView" class="app-view">
+  <div class="bus-shell">
+    <div id="busOverview">
+      <div class="bus-heading">
+        <div><div class="bus-kicker">BUSITALIA CAMPANIA</div><h1>Linee bus</h1></div>
+        <div class="bus-dataset-meta" id="busDatasetMeta"></div>
+      </div>
+      <label class="bus-search-wrap">
+        <span aria-hidden="true">⌕</span>
+        <input id="busSearch" type="search" placeholder="Cerca linea, fermata o destinazione" autocomplete="off"/>
+      </label>
+      <section class="bus-section">
+        <div class="bus-section-title"><strong>Fermate vicine</strong><span>coordinate offline</span></div>
+        <div id="busNearby"></div>
+      </section>
+      <section class="bus-section">
+        <div class="bus-section-title"><strong>Tutte le linee</strong><span id="busLinesCount"></span></div>
+        <div id="busLines" class="bus-lines"></div>
+      </section>
+    </div>
+    <div id="busDetail" hidden></div>
+  </div>
+</div>
 
 <!-- Planner view -->
 <div id="planView" style="position:absolute;inset:0;z-index:2;overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;pointer-events:none;transition:opacity 0.5s ease,transform 0.6s cubic-bezier(0.16,1,0.3,1);transform:scale(0.96)">

@@ -3,6 +3,7 @@ import { metroDeps, duomoDeps, activeTrains, findLatestConnection, hav, metroSer
 import { getRealtimeDepartures } from "./realtime.js";
 import { registerServiceWorker } from "./pwa.js";
 import { initInstallPrompt } from "./install-prompt.js";
+import { initBusView, updateBusPosition } from "./bus-ui.js";
 
 // Application UI state
 // ─── STATE ──────────────────────────────────────
@@ -168,19 +169,23 @@ function setView(mode){
   viewMode=mode;
   document.getElementById('tLine').classList.toggle('active',mode==='line');
   document.getElementById('tMap').classList.toggle('active',mode==='map');
+  document.getElementById('tBus').classList.toggle('active',mode==='bus');
   document.getElementById('tPlan').classList.toggle('active',mode==='plan');
   const sch=document.getElementById('schematic');
   const mw=document.getElementById('mapWrap');
   const pv=document.getElementById('planView');
+  const bv=document.getElementById('busView');
   const panel=document.getElementById('panel');
   const loc=document.getElementById('locBtn');
 
   // Hide all first
   sch.classList.add('hidden');
   mw.classList.remove('active');
+  bv.classList.remove('active');
   pv.style.opacity='0';pv.style.pointerEvents='none';pv.style.transform='scale(0.96)';
   panel.style.display='';
   loc.style.display='';
+  loc.style.bottom='calc(50vh + 16px)';
 
   if(mode==='map'){
     initMap();
@@ -191,6 +196,11 @@ function setView(mode){
       leafletMap.flyTo([st.lat,st.lng],15,{duration:0.8});
       updateMapMarkers();
     },100);
+  }else if(mode==='bus'){
+    bv.classList.add('active');
+    panel.style.display='none';
+    loc.style.bottom='24px';
+    initBusView(userPos);
   }else if(mode==='plan'){
     pv.style.opacity='1';pv.style.pointerEvents='auto';pv.style.transform='scale(1)';
     panel.style.display='none';
@@ -421,6 +431,7 @@ function locateUser(){
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
     userPos={lat,lng};
+    updateBusPosition(userPos);
 
     // Find nearest
     let minD=Infinity,minI=0;
