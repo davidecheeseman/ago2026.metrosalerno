@@ -1,7 +1,8 @@
 import { ST, DU, FU, CUM, POI } from "./data.js";
-import { metroDeps, duomoDeps, activeTrains, findLatestConnection, hav } from "./timetable.js";
+import { metroDeps, duomoDeps, activeTrains, findLatestConnection, hav, metroServiceStatus } from "./timetable.js";
 import { getRealtimeDepartures } from "./realtime.js";
 import { registerServiceWorker } from "./pwa.js";
+import { initInstallPrompt } from "./install-prompt.js";
 
 // Application UI state
 // ─── STATE ──────────────────────────────────────
@@ -353,6 +354,10 @@ function planTrip(stId,poiIdx){
 function renderDepartures(){
   const now=new Date(),cm=now.getHours()*60+now.getMinutes(),hol=now.getDay()===0;
   let h='';
+  if(selIdx>=0){
+    const service=metroServiceStatus(cm,now.getDay());
+    if(service.closed)h+=`<div class="service-closed"><span class="service-closed-dot"></span><div><strong>Metropolitana chiusa</strong><span>${service.detail}</span></div></div>`;
+  }
   const station=selIdx===-1?DU:ST[Math.max(0,selIdx)];
   const realtime=realtimeByStation.get(station.id);
   if(realtime?.departures.length){
@@ -722,6 +727,7 @@ setInterval(refreshRealtime,30000);
 
 // Register service worker
 registerServiceWorker();
+initInstallPrompt();
 
 // Inline event attributes are retained for now; expose only the UI entry points.
 Object.assign(window,{

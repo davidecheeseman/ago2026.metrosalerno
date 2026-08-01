@@ -1,4 +1,4 @@
-const CACHE = 'metro-salerno-v3';
+const CACHE = 'metro-salerno-v4';
 const BASE = new URL('./', self.location).pathname;
 const ASSETS = [
   BASE,
@@ -11,6 +11,7 @@ const ASSETS = [
   `${BASE}js/config.js`,
   `${BASE}js/data.js`,
   `${BASE}js/offline-timetable.js`,
+  `${BASE}js/install-prompt.js`,
   `${BASE}js/timetable.js`,
   `${BASE}js/realtime.js`,
   `${BASE}js/pwa.js`,

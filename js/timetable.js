@@ -45,6 +45,22 @@ export function duomoDeps(currentMinutes, weekday = new Date().getDay()) {
     }));
 }
 
+export function metroServiceStatus(currentMinutes, weekday = new Date().getDay()) {
+  const endpointDepartures = [
+    ...daySchedule("SA", weekday).filter(item => directionOf(item) === "arechi"),
+    ...daySchedule("ST", weekday).filter(item => directionOf(item) === "salerno"),
+  ].map(item => toMinutes(item.time));
+  if (!endpointDepartures.length) {
+    return { closed: true, detail: "Nessun servizio metropolitano programmato oggi." };
+  }
+  const first = Math.min(...endpointDepartures);
+  const lastArrival = Math.max(...endpointDepartures) + TOT;
+  const format = minutes => `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  if (currentMinutes < first) return { closed: true, detail: `Il servizio inizierà alle ${format(first)}.` };
+  if (currentMinutes > lastArrival) return { closed: true, detail: `Il servizio di oggi è terminato alle ${format(lastArrival)}.` };
+  return { closed: false, detail: null };
+}
+
 export function findLatestConnection(fromIndex, toIndex, arrivalDeadline, weekday) {
   const from = daySchedule(METRO_STATIONS[fromIndex], weekday);
   const to = daySchedule(METRO_STATIONS[toIndex], weekday);
