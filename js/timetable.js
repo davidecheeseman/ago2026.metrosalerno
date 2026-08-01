@@ -1,19 +1,90 @@
 import { CUM, TOT } from "./data.js";
+import { OFFLINE_TIMETABLE } from "./offline-timetable.js";
 
-// ─── TIMETABLE ──────────────────────────────────
-export function metroDeps(si,cm,hol){
-  const sm=hol?35:5,r=[];
-  for(const dir of['arechi','salerno']){let h=6,m=sm;while(h<22||(h===22&&m<=5)){const dm=h*60+m,am=dir==='arechi'?dm+CUM[si]:dm+CUM[5-si];if(am>=cm&&am<1440){const hh=Math.floor(am/60),mm=am%60;r.push({time:`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`,dest:dir==='arechi'?'→ Arechi':'→ Salerno FS',dir,mins:Math.max(0,Math.round(am-cm))})}m+=30;if(m>=60){m-=60;h++}}}
-  r.sort((a,b)=>a.mins-b.mins);return r;
-}
-const DU_T=[[5,6],[5,28],[5,51],[6,14],[6,39],[7,4],[7,22],[7,44],[8,6],[8,28],[8,53],[9,18],[9,44],[10,14],[10,44],[11,14],[11,44],[12,14],[12,44],[13,14],[13,44],[14,14],[14,44],[15,14],[15,39],[16,4],[16,28],[16,53],[17,14],[17,39],[18,7],[18,28],[18,53],[19,18],[19,44],[20,13],[20,39],[21,9],[21,39]];
-export function duomoDeps(cm){const r=[];for(const[h,m]of DU_T){const dm=h*60+m;if(dm>=cm)r.push({time:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`,dest:'→ Napoli',mins:Math.max(0,Math.round(dm-cm))})}return r}
+const METRO_STATIONS = ["SA", "TO", "PA", "ME", "AR", "ST"];
+const toMinutes = time => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
 
-// Active trains
-export function activeTrains(cm,hol){
-  const tr=[];const sm=hol?35:5;
-  for(const dir of['arechi','salerno']){let h=6,m=sm;while(h<22||(h===22&&m<=5)){const dm=h*60+m,el=cm-dm;if(el>=0&&el<=TOT+1){const c=Math.max(0,Math.min(el,TOT));tr.push({frac:dir==='arechi'?c/TOT:1-c/TOT,dir,at:el<=0.5||el>=TOT-0.5,id:`M${dir[0].toUpperCase()}${h}:${String(m).padStart(2,'0')}`})}m+=30;if(m>=60){m-=60;h++}}}
-  return tr;
+function daySchedule(stationId, weekday = new Date().getDay()) {
+  return OFFLINE_TIMETABLE[stationId]?.[weekday] || [];
 }
 
-export function hav(a1,o1,a2,o2){const R=6371000,r=d=>d*Math.PI/180,dl=r(a2-a1),dg=r(o2-o1),a=Math.sin(dl/2)**2+Math.cos(r(a1))*Math.cos(r(a2))*Math.sin(dg/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
+function directionOf(departure) {
+  const destination = departure.destination.toUpperCase();
+  if (destination.includes("ARECHI")) return "arechi";
+  if (destination === "SALERNO" || destination.includes("SALERNO CENTRALE")) return "salerno";
+  return null;
+}
+
+export function metroDeps(stationIndex, currentMinutes, _holiday, weekday = new Date().getDay()) {
+  const stationId = METRO_STATIONS[stationIndex];
+  return daySchedule(stationId, weekday)
+    .map(departure => ({ ...departure, dir: directionOf(departure), minute: toMinutes(departure.time) }))
+    .filter(departure => departure.dir && departure.minute >= currentMinutes)
+    .map(departure => ({
+      time: departure.time,
+      train: departure.train,
+      dest: departure.dir === "arechi" ? "→ Arechi" : "→ Salerno FS",
+      dir: departure.dir,
+      mins: Math.max(0, Math.round(departure.minute - currentMinutes)),
+    }))
+    .sort((a, b) => a.mins - b.mins);
+}
+
+export function duomoDeps(currentMinutes, weekday = new Date().getDay()) {
+  return daySchedule("DV", weekday)
+    .map(departure => ({ ...departure, minute: toMinutes(departure.time) }))
+    .filter(departure => departure.minute >= currentMinutes)
+    .map(departure => ({
+      time: departure.time,
+      train: departure.train,
+      dest: `→ ${departure.destination}`,
+      mins: Math.max(0, Math.round(departure.minute - currentMinutes)),
+    }));
+}
+
+export function findLatestConnection(fromIndex, toIndex, arrivalDeadline, weekday) {
+  const from = daySchedule(METRO_STATIONS[fromIndex], weekday);
+  const to = daySchedule(METRO_STATIONS[toIndex], weekday);
+  const destination = toIndex > fromIndex ? "arechi" : "salerno";
+  const arrivalsByTrain = new Map(to.filter(item => directionOf(item) === destination).map(item => [item.train, item]));
+  let best = null;
+  for (const departure of from) {
+    if (directionOf(departure) !== destination) continue;
+    const arrival = arrivalsByTrain.get(departure.train);
+    const da = toMinutes(departure.time);
+    // Terminal stations do not expose a subsequent departure for the same
+    // train. In that case use the line's published segment travel time.
+    const aa = arrival ? toMinutes(arrival.time) : da + Math.abs(CUM[toIndex] - CUM[fromIndex]);
+    if (aa <= arrivalDeadline && (!best || aa > best.aa)) best = { da, aa, train: departure.train };
+  }
+  return best;
+}
+
+export function activeTrains(currentMinutes, _holiday, weekday = new Date().getDay()) {
+  const trains = [];
+  for (const [stationId, direction] of [["SA", "arechi"], ["ST", "salerno"]]) {
+    for (const departure of daySchedule(stationId, weekday)) {
+      if (directionOf(departure) !== direction) continue;
+      const elapsed = currentMinutes - toMinutes(departure.time);
+      if (elapsed < 0 || elapsed > TOT + 1) continue;
+      const covered = Math.max(0, Math.min(elapsed, TOT));
+      trains.push({
+        frac: direction === "arechi" ? covered / TOT : 1 - covered / TOT,
+        dir: direction,
+        at: elapsed <= 0.5 || elapsed >= TOT - 0.5,
+        id: departure.train,
+      });
+    }
+  }
+  return trains;
+}
+
+export function hav(a1, o1, a2, o2) {
+  const R = 6371000, radians = degrees => degrees * Math.PI / 180;
+  const latitude = radians(a2 - a1), longitude = radians(o2 - o1);
+  const value = Math.sin(latitude / 2) ** 2 + Math.cos(radians(a1)) * Math.cos(radians(a2)) * Math.sin(longitude / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+}

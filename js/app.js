@@ -1,5 +1,5 @@
 import { ST, DU, FU, CUM, POI } from "./data.js";
-import { metroDeps, duomoDeps, activeTrains, hav } from "./timetable.js";
+import { metroDeps, duomoDeps, activeTrains, findLatestConnection, hav } from "./timetable.js";
 import { getRealtimeDepartures } from "./realtime.js";
 import { registerServiceWorker } from "./pwa.js";
 
@@ -634,7 +634,6 @@ function calculatePlan(){
   if(!tv){res.innerHTML=errBox('Inserisci orario di arrivo');return}
   const dv=document.getElementById('planDay').value;
   const now=new Date();
-  let isHol=dv==='weekend'||((dv==='today'&&now.getDay()===0)||(dv==='tomorrow'&&(now.getDay()+1)%7===0));
   const [aH,aM]=tv.split(':').map(Number),arrMin=aH*60+aM;
 
   let bFS=0,bFD=Infinity;ST.forEach((s,i)=>{const d=hav(planFromCoords.lat,planFromCoords.lng,s.lat,s.lng);if(d<bFD){bFD=d;bFS=i}});
@@ -645,10 +644,8 @@ function calculatePlan(){
   const mMins=Math.abs(CUM[bTS]-CUM[bFS]);
   const same=bFS===bTS;
   const mustArr=arrMin-w2;
-  const dir=bTS>bFS?'arechi':'salerno';
-  const sm=isHol?35:5;
-  let best=null;
-  if(!same){let h=6,m=sm;while(h<22||(h===22&&m<=5)){const dp=h*60+m;const da=dir==='arechi'?dp+CUM[bFS]:dp+CUM[5-bFS];const aa=dir==='arechi'?dp+CUM[bTS]:dp+CUM[5-bTS];if(aa<=mustArr)best={da,aa};m+=30;if(m>=60){m-=60;h++}}}
+  const selectedWeekday=dv==='today'?now.getDay():dv==='tomorrow'?(now.getDay()+1)%7:dv==='weekend'?0:1;
+  const best=same?null:findLatestConnection(bFS,bTS,mustArr,selectedWeekday);
 
   const fmt=m=>{const h=Math.floor(((m%1440)+1440)%1440/60),mi=Math.floor(((m%1440)+1440)%1440%60);return`${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`};
   const fN=document.getElementById('planFromAddr').value;
