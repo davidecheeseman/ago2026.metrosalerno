@@ -6,7 +6,7 @@ const normalize = value => String(value || "").normalize("NFD").replace(/[\u0300
 const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
 const toMinutes = time => { const [hours, minutes] = time.split(":").map(Number); return hours * 60 + minutes; };
 
-function validityActive(label, date = new Date()) {
+export function validityActive(label, date = new Date()) {
   const text = normalize(label), day = date.getDay(), month = date.getMonth();
   const summer = month >= 5 && month <= 8;
   if ((text.includes("escluso estivo") || text.includes("escl. estivo")) && summer) return false;

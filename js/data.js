@@ -1,13 +1,13 @@
 // ─── DATA ──────────────────────────────────────
 const ST=[
-  {id:"SA",name:"Salerno FS",lat:40.67535,lng:14.77125,km:0,term:1},
-  {id:"TO",name:"Torrione",lat:40.67175,lng:14.78620,km:1.2},
-  {id:"PA",name:"Pastena",lat:40.66930,lng:14.79570,km:2.1},
-  {id:"ME",name:"Mercatello",lat:40.66560,lng:14.80750,km:3.2},
-  {id:"AR",name:"Arbostella",lat:40.66220,lng:14.81700,km:4.2},
-  {id:"ST",name:"Stadio Arechi",lat:40.65800,lng:14.82680,km:5.7,term:1},
+  {id:"SA",name:"Salerno FS",lat:40.6754966,lng:14.7726212,km:0,term:1},
+  {id:"TO",name:"Torrione",lat:40.6703629,lng:14.7902878,km:1.2},
+  {id:"PA",name:"Pastena",lat:40.6649417,lng:14.7998167,km:2.1},
+  {id:"ME",name:"Mercatello",lat:40.6588268,lng:14.8047320,km:3.2},
+  {id:"AR",name:"Arbostella",lat:40.6517094,lng:14.8131339,km:4.2},
+  {id:"ST",name:"Stadio Arechi",lat:40.6483170,lng:14.8243343,km:5.7,term:1},
 ];
-const DU={id:"DV",name:"Duomo-Via Vernieri",lat:40.67820,lng:14.76550};
+const DU={id:"DV",name:"Duomo-Via Vernieri",lat:40.6814033,lng:14.7623481};
 const FU=[
   {id:"ASI",name:"ASI",lat:40.6545,lng:14.8380},
   {id:"OS",name:"Ospedale",lat:40.6500,lng:14.8490},

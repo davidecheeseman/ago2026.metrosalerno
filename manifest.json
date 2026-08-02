@@ -1,7 +1,7 @@
 {
   "name": "Metro Salerno",
   "short_name": "Metro SA",
-  "description": "Orari offline, mappa e partenze di metro e bus a Salerno",
+  "description": "Orari offline, mappa e partenze di metro, bus e Aeroporto di Salerno",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

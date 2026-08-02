@@ -112,6 +112,7 @@ body{font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;background:
 .cb-accept{background:var(--red);color:#fff}
 .cb-decline{background:rgba(255,255,255,0.06);color:var(--text);border:1px solid rgba(255,255,255,0.08)!important}
 .privacy-footer{position:fixed;bottom:4px;left:0;right:0;z-index:50;text-align:center;font-size:10px;pointer-events:none}
+.privacy-footer .app-version{color:rgba(240,236,228,0.3);font-weight:700;letter-spacing:.4px}
 .privacy-footer a{color:rgba(240,236,228,0.2);text-decoration:none;pointer-events:auto;padding:4px 8px}
 .privacy-footer a:hover{color:rgba(240,236,228,0.4)}
 
@@ -216,7 +217,53 @@ body{font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;background:
 .bus-live-dot{color:var(--bus)}
 .bus-closed-dot{background:var(--bus);box-shadow:0 0 12px rgba(245,158,11,.55)}
 @keyframes busPulse{0%{transform:scale(.8);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+
+/* ── Selective multimodal map ── */
+#mapRouteControl{position:fixed;left:12px;right:12px;bottom:14px;z-index:110;display:none;pointer-events:none}
+#mapRouteControl.active{display:block}
+#mapRouteButton{width:min(100%,430px);min-height:58px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:9px 14px;border:1px solid rgba(255,255,255,.1);border-radius:17px;background:rgba(13,13,20,.96);backdrop-filter:blur(20px);box-shadow:0 12px 35px rgba(0,0,0,.45);color:var(--text);font-family:inherit;text-align:left;pointer-events:auto;cursor:pointer}
+#mapRouteButton>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:2px}
+#mapRouteButton small{color:var(--dim);font-size:8px;font-weight:750;letter-spacing:1.2px}
+#mapRouteButton strong{font-size:14px}
+#mapRouteButton>b{color:var(--dim)}
+.map-control-icon{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:var(--red);color:#fff;font-size:24px;font-weight:900;box-shadow:0 0 18px var(--glow)}
+#mapRouteSheet{position:fixed;left:0;right:0;bottom:0;max-height:72vh;padding:8px 16px 22px;border:1px solid rgba(255,255,255,.08);border-radius:22px 22px 0 0;background:rgba(13,13,20,.985);backdrop-filter:blur(24px);box-shadow:0 -20px 60px rgba(0,0,0,.5);transform:translateY(105%);transition:transform .38s cubic-bezier(.16,1,.3,1);pointer-events:auto;overflow:hidden}
+#mapRouteSheet.open{transform:translateY(0)}
+.map-sheet-handle{width:36px;height:4px;margin:1px auto 15px;border-radius:3px;background:rgba(255,255,255,.15)}
+.map-sheet-title{margin-bottom:12px;font-size:21px;font-weight:850;letter-spacing:-.6px}
+#mapRouteChoices{max-height:calc(72vh - 115px);margin-top:10px;overflow-y:auto}
+.map-route-choice{width:100%;display:flex;align-items:center;gap:12px;padding:10px 4px;border:0;border-bottom:1px solid rgba(255,255,255,.05);background:transparent;color:var(--text);font-family:inherit;text-align:left;cursor:pointer}
+.map-route-choice.selected{border-radius:12px;background:rgba(255,255,255,.055)}
+.map-route-choice>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+.map-route-choice strong{font-size:13px}.map-route-choice small{overflow:hidden;color:var(--dim);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.map-route-symbol{min-width:42px;height:34px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;font-size:12px;font-weight:900}
+.metro-symbol{background:var(--red);color:#fff}.bus-symbol{background:var(--bus);color:#111}
+.bus-map-marker{border-radius:50%;background:var(--bus);border:2px solid #111;box-shadow:0 0 0 2px rgba(255,255,255,.72),0 4px 14px rgba(0,0,0,.45);color:#111;text-align:center}
+.bus-map-marker span{font-size:7px;font-weight:900;line-height:20px}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:rgba(18,18,26,.98);color:var(--text)}
+.leaflet-popup-content{font-family:'DM Sans','SF Pro Display',-apple-system,sans-serif;line-height:1.4}.leaflet-popup-content small{color:var(--dim)}
+
+/* ── Airport ── */
+.airport-view{--airport:#64b5ff}
+.airport-shell{width:min(100%,680px);margin:0 auto;padding:80px 16px 80px}
+.airport-hero{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px}
+.airport-code{width:62px;height:62px;display:flex;align-items:center;justify-content:center;border-radius:17px;background:var(--airport);color:#06111b;font-size:19px;font-weight:950;letter-spacing:1px;box-shadow:0 0 24px rgba(100,181,255,.35)}
+.airport-kicker{color:var(--airport);font-size:8px;font-weight:800;letter-spacing:1.2px}
+.airport-hero h1{font-size:27px;letter-spacing:-1px}
+.airport-status{grid-column:1/-1;display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:12px;background:rgba(52,211,153,.08);color:var(--emerald);font-size:11px;font-weight:700}
+.airport-status i{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px rgba(52,211,153,.7)}
+.airport-status.closed{background:rgba(230,57,70,.08);color:var(--red)}.airport-status.closed i{background:var(--red);box-shadow:0 0 10px var(--glow)}
+.airport-actions{display:flex;gap:8px;margin-top:12px}.airport-actions a{flex:1;padding:11px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);font-size:11px;font-weight:700;text-align:center;text-decoration:none}
+.airport-section{margin-top:24px}
+.airport-toggle{width:max-content;display:flex;margin-bottom:10px;padding:2px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:rgba(255,255,255,.045)}
+.airport-toggle button{padding:7px 15px;border:0;border-radius:8px;background:transparent;color:var(--dim);font-family:inherit;font-size:10px;font-weight:750;cursor:pointer}.airport-toggle button.active{background:rgba(100,181,255,.13);color:var(--airport)}
+.airport-flight-card{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:12px;border:1px solid rgba(255,255,255,.055);border-radius:14px;background:rgba(255,255,255,.035);margin-bottom:6px}
+.airport-flight-time{display:flex;flex-direction:column}.airport-flight-time time{font-size:19px;font-weight:850;font-variant-numeric:tabular-nums}.airport-actual{color:var(--airport);font-size:10px}
+.airport-flight-main{min-width:0;display:flex;flex-direction:column;gap:3px}.airport-flight-main strong{overflow:hidden;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.airport-flight-main span{overflow:hidden;color:var(--dim);font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+.airport-flight-status{display:flex;flex-direction:column;align-items:flex-end;color:var(--emerald);font-size:10px;font-weight:800}.airport-flight-status small{margin-top:2px;color:var(--dim);font-size:8px}.airport-flight-status.alert{color:var(--red)}
+.airport-live-link{display:block;margin-top:8px;padding:12px;border-radius:12px;background:rgba(100,181,255,.1);color:var(--airport);font-size:11px;font-weight:750;text-align:center;text-decoration:none}
+.airport-mins{color:var(--airport)}.airport-dot{background:var(--airport);box-shadow:0 0 12px rgba(100,181,255,.5)}
 @media(max-width:560px){
-  #header{padding-left:10px;padding-right:10px;gap:7px}.logo{width:30px;height:30px}.htitle{font-size:14px}.hsub{font-size:8px}.hright{gap:5px}.hclock{display:none}.toggle-btn{padding:5px 7px;font-size:9px}
+  #header{padding-left:8px;padding-right:8px;gap:5px}.logo{width:29px;height:29px}.htitle,.hsub{display:none}.hright{gap:4px}.hclock{display:none}.toggle-btn{padding:5px 6px;font-size:8.5px}
 }
 @media(max-width:390px){.htitle,.hsub{display:none}.toggle-btn{padding:5px 8px}}

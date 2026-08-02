@@ -4,6 +4,8 @@ import { getRealtimeDepartures } from "./realtime.js";
 import { registerServiceWorker } from "./pwa.js";
 import { initInstallPrompt } from "./install-prompt.js";
 import { initBusView, updateBusPosition } from "./bus-ui.js";
+import { initAirportView } from "./airport-ui.js";
+import { focusMetroStation, initNetworkMap, refreshNetworkMap, showUserOnNetworkMap } from "./map-ui.js";
 
 // Application UI state
 // ─── STATE ──────────────────────────────────────
@@ -116,65 +118,20 @@ function buildSchematic(){
   document.getElementById('schematic').innerHTML=`<div style="padding:72px 0 0;position:relative;z-index:2">${svg}</div>`;
 }
 
-// ─── MAP SETUP ──────────────────────────────────
-let leafletMap,mapMarkers=[],userMarker=null,mapReady=false;
-
-function initMap(){
-  if(mapReady)return;
-  leafletMap=L.map('map',{center:[40.667,14.800],zoom:14,zoomControl:false,attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(leafletMap);
-
-  // Lines
-  L.polyline(ST.map(s=>[s.lat,s.lng]),{color:'#E63946',weight:5,opacity:0.9,lineCap:'round'}).addTo(leafletMap);
-  L.polyline(ST.map(s=>[s.lat,s.lng]),{color:'#E63946',weight:12,opacity:0.15,lineCap:'round'}).addTo(leafletMap);
-  L.polyline([[ST[5].lat,ST[5].lng],...FU.map(s=>[s.lat,s.lng])],{color:'#E63946',weight:3,opacity:0.2,dashArray:'8,8',lineCap:'round'}).addTo(leafletMap);
-  L.polyline([[ST[0].lat,ST[0].lng],[DU.lat,DU.lng]],{color:'#34d399',weight:3,opacity:0.5,dashArray:'6,6',lineCap:'round'}).addTo(leafletMap);
-
-  // Station markers
-  ST.forEach((s,i)=>{
-    const m=L.marker([s.lat,s.lng],{icon:mkIcon(s,i===selIdx,false,false)}).addTo(leafletMap).on('click',()=>selectStation(i));
-    mapMarkers.push({m,s,i,t:'metro'});
-    L.marker([s.lat,s.lng],{icon:L.divIcon({className:`slbl${i===selIdx?'':' d'}`,html:s.name,iconSize:[120,16],iconAnchor:[60,-12]}),interactive:false}).addTo(leafletMap);
-  });
-
-  // Duomo
-  const dm=L.marker([DU.lat,DU.lng],{icon:mkIcon(DU,selIdx===-1,true,false)}).addTo(leafletMap).on('click',()=>selectStation(-1));
-  mapMarkers.push({m:dm,s:DU,i:-1,t:'duo'});
-  L.marker([DU.lat,DU.lng],{icon:L.divIcon({className:'slbl d',html:DU.name,iconSize:[140,16],iconAnchor:[70,-10]}),interactive:false}).addTo(leafletMap);
-
-  // Future
-  FU.forEach(s=>{
-    L.marker([s.lat,s.lng],{icon:mkIcon(s,false,false,true),interactive:false}).addTo(leafletMap);
-    L.marker([s.lat,s.lng],{icon:L.divIcon({className:'slbl f',html:s.name,iconSize:[100,16],iconAnchor:[50,-8]}),interactive:false}).addTo(leafletMap);
-  });
-
-  mapReady=true;
-}
-
-function mkIcon(s,sel,duo,fut){
-  let c='sm';if(s.term)c+=' term';if(sel)c+=' sel';if(duo)c+=' duo';if(fut)c+=' fut';
-  const sz=s.term?24:duo?16:20;
-  return L.divIcon({className:c,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
-}
-
-function updateMapMarkers(){
-  if(!mapReady)return;
-  mapMarkers.forEach(({m,s,i,t})=>{
-    m.setIcon(mkIcon(s,i===selIdx,t==='duo',false));
-  });
-}
-
 // ─── VIEW TOGGLE ────────────────────────────────
 function setView(mode){
   viewMode=mode;
   document.getElementById('tLine').classList.toggle('active',mode==='line');
   document.getElementById('tMap').classList.toggle('active',mode==='map');
   document.getElementById('tBus').classList.toggle('active',mode==='bus');
+  document.getElementById('tAirport').classList.toggle('active',mode==='airport');
   document.getElementById('tPlan').classList.toggle('active',mode==='plan');
   const sch=document.getElementById('schematic');
   const mw=document.getElementById('mapWrap');
   const pv=document.getElementById('planView');
   const bv=document.getElementById('busView');
+  const av=document.getElementById('airportView');
+  const mapControl=document.getElementById('mapRouteControl');
   const panel=document.getElementById('panel');
   const loc=document.getElementById('locBtn');
 
@@ -182,25 +139,33 @@ function setView(mode){
   sch.classList.add('hidden');
   mw.classList.remove('active');
   bv.classList.remove('active');
+  av.classList.remove('active');
+  mapControl.classList.remove('active');
+  document.getElementById('mapRouteSheet').classList.remove('open');
   pv.style.opacity='0';pv.style.pointerEvents='none';pv.style.transform='scale(0.96)';
   panel.style.display='';
   loc.style.display='';
   loc.style.bottom='calc(50vh + 16px)';
 
   if(mode==='map'){
-    initMap();
+    initNetworkMap({stationIndex:selIdx,selectStation});
     mw.classList.add('active');
+    mapControl.classList.add('active');
+    panel.style.display='none';
+    loc.style.bottom='86px';
     setTimeout(()=>{
-      leafletMap.invalidateSize();
-      const st=selIdx===-1?DU:ST[Math.max(0,selIdx)];
-      leafletMap.flyTo([st.lat,st.lng],15,{duration:0.8});
-      updateMapMarkers();
+      refreshNetworkMap();
     },100);
   }else if(mode==='bus'){
     bv.classList.add('active');
     panel.style.display='none';
     loc.style.bottom='24px';
     initBusView(userPos);
+  }else if(mode==='airport'){
+    av.classList.add('active');
+    panel.style.display='none';
+    loc.style.display='none';
+    initAirportView();
   }else if(mode==='plan'){
     pv.style.opacity='1';pv.style.pointerEvents='auto';pv.style.transform='scale(1)';
     panel.style.display='none';
@@ -231,10 +196,7 @@ function selectStation(idx){
   refreshRealtime();
 
   if(viewMode==='line')buildSchematic();
-  if(viewMode==='map'&&mapReady){
-    updateMapMarkers();
-    leafletMap.flyTo([st.lat,st.lng],15,{duration:0.6});
-  }
+  if(viewMode==='map')focusMetroStation(idx);
   if(panelCollapsed){panelCollapsed=false;document.getElementById('panel').classList.remove('collapsed')}
 }
 
@@ -441,10 +403,7 @@ function locateUser(){
     selectStation(minI);
 
     // Map marker
-    if(viewMode==='map'&&mapReady){
-      if(userMarker)leafletMap.removeLayer(userMarker);
-      userMarker=L.marker([lat,lng],{icon:L.divIcon({className:'',html:'<div class="um"><div class="umr"></div></div>',iconSize:[16,16],iconAnchor:[8,8]}),zIndexOffset:1000}).addTo(leafletMap);
-    }
+    if(viewMode==='map')showUserOnNetworkMap({lat,lng});
   },null,{enableHighAccuracy:true,timeout:8000});
 }
 

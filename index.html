@@ -17,12 +17,13 @@
 <!-- Header -->
 <div id="header">
   <div class="logo">M</div>
-  <div><div class="htitle">Metro Salerno</div><div class="hsub">Metro + Bus</div></div>
+  <div><div class="htitle">Metro Salerno</div><div class="hsub">Metro · Bus · Aeroporto</div></div>
   <div class="hright">
     <div class="toggle-wrap">
       <button class="toggle-btn active" id="tLine" onclick="setView('line')">Metro</button>
       <button class="toggle-btn" id="tMap" onclick="setView('map')">Mappa</button>
       <button class="toggle-btn" id="tBus" onclick="setView('bus')">Bus</button>
+      <button class="toggle-btn" id="tAirport" onclick="setView('airport')">Aeroporto</button>
       <button class="toggle-btn" id="tPlan" onclick="setView('plan')">Pianifica</button>
     </div>
     <div class="hclock" id="clock"></div>
@@ -39,6 +40,15 @@
 
 <!-- Map view -->
 <div id="mapWrap"><div id="map"></div></div>
+<div id="mapRouteControl">
+  <button id="mapRouteButton" type="button" aria-controls="mapRouteSheet" aria-expanded="false"><span class="map-control-icon">⌁</span><span><small>LINEA VISUALIZZATA</small><strong id="mapRouteLabel">Metropolitana</strong></span><b>⌃</b></button>
+  <div id="mapRouteSheet">
+    <div class="map-sheet-handle"></div>
+    <div class="map-sheet-title">Scegli cosa mostrare</div>
+    <label class="bus-search-wrap"><span>⌕</span><input id="mapRouteSearch" type="search" aria-label="Cerca una linea da mostrare" placeholder="Metro, numero linea o destinazione" autocomplete="off"/></label>
+    <div id="mapRouteChoices"></div>
+  </div>
+</div>
 
 <!-- Bus view -->
 <div id="busView" class="app-view">
@@ -62,6 +72,32 @@
       </section>
     </div>
     <div id="busDetail" hidden></div>
+  </div>
+</div>
+
+<!-- Airport view -->
+<div id="airportView" class="app-view airport-view">
+  <div class="airport-shell">
+    <div class="airport-hero">
+      <div class="airport-code">QSR</div>
+      <div><div class="airport-kicker">SALERNO COSTA D’AMALFI E DEL CILENTO</div><h1>Aeroporto</h1></div>
+      <div id="airportStatus" class="airport-status"></div>
+    </div>
+    <div class="airport-actions">
+      <a id="airportMapLink" target="_blank" rel="noopener">Indicazioni</a>
+      <a href="https://www.aeroportosalerno.it/it/in-bus" target="_blank" rel="noopener">Come arrivare</a>
+    </div>
+    <section class="airport-section">
+      <div class="bus-section-title"><strong>Voli</strong><span id="airportSnapshot"></span></div>
+      <div class="airport-toggle"><button type="button" class="active" data-flight-mode="departures">Partenze</button><button type="button" data-flight-mode="arrivals">Arrivi</button></div>
+      <div id="airportFlights"></div>
+      <a id="airportLiveLink" class="airport-live-link" target="_blank" rel="noopener">Apri tabellone live GESAC</a>
+    </section>
+    <section class="airport-section">
+      <div class="bus-section-title"><strong>Bus dall’aeroporto</strong><span>Linea 008 · orario offline</span></div>
+      <div id="airportBuses"></div>
+    </section>
+    <div class="footer-info">Gli orari dei voli sono uno snapshot informativo. Verifica sempre il tabellone ufficiale e la compagnia aerea.</div>
   </div>
 </div>
 
@@ -151,7 +187,7 @@
 
 <!-- Privacy footer link -->
 <div class="privacy-footer">
-  <a href="./privacy.html">Privacy</a> · <a href="./cookie-policy.html">Cookie</a>
+  <span class="app-version" aria-label="Versione 0.6">v0.6</span> · <a href="./privacy.html">Privacy</a> · <a href="./cookie-policy.html">Cookie</a>
 </div>
 
 <script>
