@@ -1,6 +1,6 @@
 import { BUS_LINES, BUS_META, BUS_STOPS, BUS_TRIPS } from "./bus-data.js";
 
-let initialized = false, userPosition = null, selectedLine = null;
+let initialized = false, userPosition = null, selectedLine = null, selectedTripIndex = null, selectedStopPosition = 0;
 const searchIndex = new Map();
 const normalize = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
@@ -28,11 +28,24 @@ function distance(a, b) {
   return earth * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 }
 
-function nextTrips(line) {
+function representativeTrips(line) {
+  const byDirection = new Map();
+  for (const tripIndex of line.trips) {
+    const trip = BUS_TRIPS[tripIndex];
+    const current = byDirection.get(trip.direction);
+    if (trip.stops.length && (!current || trip.stops.length > BUS_TRIPS[current].stops.length)) byDirection.set(trip.direction, tripIndex);
+  }
+  return [...byDirection.values()];
+}
+
+function nextTripsAtStop(line, stopIndex) {
   const now = new Date(), current = now.getHours() * 60 + now.getMinutes();
   return line.trips.map(index => BUS_TRIPS[index])
     .filter(trip => trip.stops.length && validityActive(trip.validity, now))
-    .map(trip => ({ trip, departure: toMinutes(trip.stops[0][1]) }))
+    .map(trip => {
+      const stop = trip.stops.find(item => item[0] === stopIndex);
+      return stop ? { trip, stop, departure: toMinutes(stop[1]) } : null;
+    }).filter(Boolean)
     .filter(item => item.departure >= current)
     .sort((a, b) => a.departure - b.departure)
     .slice(0, 8);
@@ -74,34 +87,47 @@ function renderLines(query = "") {
   document.querySelectorAll(".bus-line-card").forEach(button => button.addEventListener("click", () => showLine(button.dataset.line)));
 }
 
-function showLine(code) {
+function showLine(code, tripIndex = null, stopPosition = 0) {
   const line = BUS_LINES.find(item => item.code === code);
   if (!line) return;
   selectedLine = line;
-  const departures = nextTrips(line);
-  const directions = [...new Set(line.trips.map(index => BUS_TRIPS[index].direction).filter(Boolean))];
-  const representative = directions.map(direction => line.trips.map(index => BUS_TRIPS[index]).find(trip => trip.direction === direction && trip.stops.length)).filter(Boolean);
+  const representative = representativeTrips(line);
+  selectedTripIndex = tripIndex ?? representative[0];
+  const selectedTrip = BUS_TRIPS[selectedTripIndex];
+  selectedStopPosition = Math.max(0, Math.min(stopPosition, selectedTrip.stops.length - 1));
+  const selectedStopIndex = selectedTrip.stops[selectedStopPosition][0];
+  const selectedStop = BUS_STOPS[selectedStopIndex];
+  const departures = nextTripsAtStop(line, selectedStopIndex);
   document.getElementById("busOverview").hidden = true;
   const detail = document.getElementById("busDetail");
   detail.hidden = false;
   detail.innerHTML = `
     <button class="bus-back" type="button">← Tutte le linee</button>
-    <div class="bus-detail-head"><span class="bus-line-badge large">${escapeHTML(line.code)}</span><div><h2>Linea ${escapeHTML(line.code)}</h2><p>${escapeHTML(line.terminals.slice(0, 4).join(" · "))}</p></div></div>
-    <section class="bus-section"><div class="bus-section-title"><strong>Prossime corse di oggi</strong><span>${departures.length ? "orario offline" : "nessuna corsa compatibile"}</span></div>
-      <div>${departures.map(({ trip }) => {
-        const first = trip.stops[0], last = trip.stops.at(-1);
-        return `<div class="bus-departure"><time>${escapeHTML(first[1])}</time><div><strong>→ ${escapeHTML(BUS_STOPS[last[0]]?.name)}</strong><span>Da ${escapeHTML(BUS_STOPS[first[0]]?.name)} · ${escapeHTML(trip.validity || "validità non indicata")}</span></div></div>`;
-      }).join("") || `<div class="bus-empty">Il servizio selezionato non ha altre partenze previste oggi.</div>`}</div>
+    <div class="bus-detail-head"><span class="bus-line-badge large">${escapeHTML(line.code)}</span><div><div class="hsub">LINEA BUSITALIA</div><h2>Linea ${escapeHTML(line.code)}</h2><p>${escapeHTML(line.terminals.slice(0, 4).join(" · "))}</p></div></div>
+    <div class="bus-direction-toggle">${representative.map(index => `<button type="button" data-trip="${index}" class="${index === selectedTripIndex ? "active" : ""}">${escapeHTML(BUS_TRIPS[index].direction || "Percorso")}</button>`).join("")}</div>
+    <section class="bus-schematic-card">
+      <div class="bus-schematic-scroll"><div class="bus-track" style="width:max(100%,${selectedTrip.stops.length * 88}px)">${selectedTrip.stops.map(([stopIndex, time], position) => `<button type="button" class="bus-stop-node ${position === selectedStopPosition ? "selected" : ""}" data-stop-position="${position}"><span class="bus-stop-time">${escapeHTML(time)}</span><i></i><span class="bus-stop-name">${escapeHTML(BUS_STOPS[stopIndex]?.name)}</span></button>`).join("")}</div></div>
     </section>
-    <section class="bus-section"><div class="bus-section-title"><strong>Percorsi</strong><span>${directions.length} direzioni</span></div>
-      ${representative.map(trip => `<details class="bus-route"><summary>${escapeHTML(trip.direction)} · ${trip.stops.length} fermate</summary><ol>${trip.stops.map(([stopIndex, time]) => `<li><time>${escapeHTML(time)}</time><span>${escapeHTML(BUS_STOPS[stopIndex]?.name)}</span></li>`).join("")}</ol></details>`).join("")}
+    <section class="bus-stop-panel">
+      <div class="st-name">${escapeHTML(selectedStop.name)}</div>
+      <div class="st-meta"><span class="geo-badge bus-geo">Linea ${escapeHTML(line.code)}</span><span>${escapeHTML(selectedTrip.direction)}</span><span>${selectedStopPosition + 1}/${selectedTrip.stops.length} fermate</span></div>
+      <div class="dir-label bus-dir-label">PROSSIME PARTENZE · ORARIO OFFLINE</div>
+      <div>${departures.map(({ trip, stop }, index) => {
+        const last = trip.stops.at(-1);
+        const minutes = Math.max(0, toMinutes(stop[1]) - (new Date().getHours() * 60 + new Date().getMinutes()));
+        return `<div class="dep-card${index === 0 ? " first" : ""}"><div><div class="dep-time">${escapeHTML(stop[1])}</div><div class="dep-dest">→ ${escapeHTML(BUS_STOPS[last[0]]?.name)} · ${escapeHTML(trip.direction)}</div></div><div style="text-align:right;min-width:40px"><div class="dep-mins bus-mins">${minutes || "ORA"}</div><div class="dep-mins-label">${minutes ? "min" : "in fermata"}</div></div></div>`;
+      }).join("") || `<div class="service-closed"><span class="service-closed-dot bus-closed-dot"></span><div><strong>Servizio terminato</strong><span>Nessun altro bus previsto oggi da questa fermata.</span></div></div>`}</div>
+      <div class="footer-info"><span class="bus-live-dot">●</span> Busitalia · dati programmati disponibili offline</div>
     </section>`;
   detail.querySelector(".bus-back").addEventListener("click", showOverview);
-  document.getElementById("busView").scrollTop = 0;
+  detail.querySelectorAll("[data-trip]").forEach(button => button.addEventListener("click", () => showLine(code, Number(button.dataset.trip), 0)));
+  detail.querySelectorAll("[data-stop-position]").forEach(button => button.addEventListener("click", () => showLine(code, selectedTripIndex, Number(button.dataset.stopPosition))));
+  if (tripIndex === null) document.getElementById("busView").scrollTop = 0;
 }
 
 function showOverview() {
   selectedLine = null;
+  selectedTripIndex = null;
   document.getElementById("busDetail").hidden = true;
   document.getElementById("busOverview").hidden = false;
 }

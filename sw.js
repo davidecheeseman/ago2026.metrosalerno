@@ -1,4 +1,4 @@
-const CACHE = 'metro-salerno-v5';
+const CACHE = 'metro-salerno-v6';
 const BASE = new URL('./', self.location).pathname;
 const ASSETS = [
   BASE,
